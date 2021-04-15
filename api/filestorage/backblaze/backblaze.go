@@ -49,3 +49,25 @@ func (b *backblaze) UploadImage(filename string, file io.Reader) (string, error)
 
 	return aws.StringValue(&result.Location), nil
 }
+
+func (b *backblaze) UploadVideo(filename string, file io.Reader) (string, error) {
+
+	var extension = filepath.Ext(filename)
+	var name = filename[0 : len(filename)-len(extension)]
+	result, err := b.Uploader.Upload(&s3manager.UploadInput{
+		ACL:         aws.String("public-read"),
+		Bucket:      aws.String(config.NewAppConfig().StorageConf.BUCKETNAME),
+		Key:         aws.String(fmt.Sprintf("%v%v-%v%v", b.basepath, name, time.Now().Unix(), extension)),
+		Body:        file,
+		ContentType: aws.String("video/mp4"),
+	})
+
+	if err != nil {
+		fmt.Printf("error %#v \n", err)
+		fmt.Println(err)
+
+		return "", err
+	}
+
+	return aws.StringValue(&result.Location), nil
+}

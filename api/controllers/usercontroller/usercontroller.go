@@ -2,31 +2,62 @@ package usercontroller
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"go_jwt_auth/api/interfaces"
-	"go_jwt_auth/api/models"
-	"go_jwt_auth/api/security"
-	"go_jwt_auth/api/utils/responses"
 	"net/http"
 	"strconv"
+
+	"go_jwt_auth/api/datastructures/userdatastructure"
+	"go_jwt_auth/api/models"
+	"go_jwt_auth/api/utils/responses"
+	"go_jwt_auth/api/authentication"
+
 
 	"github.com/gorilla/mux"
 )
 
-type UserController interface {
-	GetUsers(w http.ResponseWriter, r *http.Request)
-	CreateUser(w http.ResponseWriter, r *http.Request)
-	GetUser(w http.ResponseWriter, r *http.Request)
-	UpdateUser(w http.ResponseWriter, r *http.Request)
-	DeleteUser(w http.ResponseWriter, r *http.Request)
-}
-
 type userControllerImpl struct {
-	UserRepository interfaces.UserRepository
+	UserRepository userdatastructure.IUserRepository
 }
 
-func NewUserController(repo interfaces.UserRepository) *userControllerImpl {
+func NewUserController(repo userdatastructure.IUserRepository) *userControllerImpl {
 	return &userControllerImpl{repo}
+}
+
+func (c *userControllerImpl) DeactivateUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	uid, err := strconv.ParseUint(vars["id"], 10, 32)
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+
+	userResp, err := c.UserRepository.Deactivate(uint32(uid))
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.Header().Set("Location", fmt.Sprintf("%s%s", r.Host, r.RequestURI))
+	responses.JSON(w, http.StatusOK, userResp)
+
+}
+
+func (c *userControllerImpl) ActivateUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	uid, err := strconv.ParseUint(vars["id"], 10, 32)
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+
+	userResp, err := c.UserRepository.Activate(uint32(uid))
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.Header().Set("Location", fmt.Sprintf("%s%s", r.Host, r.RequestURI))
+	responses.JSON(w, http.StatusOK, userResp)
+
 }
 
 func (c *userControllerImpl) GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +79,7 @@ func (c *userControllerImpl) CreateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user.Password, err = security.Hash(user.Password)
+	user.Password, err = authentication.Hash(user.Password)
 
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
@@ -85,6 +116,25 @@ func (c *userControllerImpl) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Location", fmt.Sprintf("%s%s", r.Host, r.RequestURI))
 	responses.JSON(w, http.StatusOK, userResp)
+}
+
+func (c *userControllerImpl) GetUserByEmail(w http.ResponseWriter, r *http.Request) {
+	var request map[string]string
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, errors.New("expected email"))
+		return
+	}
+	userResp, err := c.UserRepository.FindByEmail(request["email"])
+
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.Header().Set("Location", fmt.Sprintf("%s%s", r.Host, r.RequestURI))
+	responses.JSON(w, http.StatusOK, userResp)
+
 }
 
 func (c *userControllerImpl) UpdateUser(w http.ResponseWriter, r *http.Request) {

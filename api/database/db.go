@@ -19,6 +19,7 @@ func InitDB(c config.DBConf) (*sql.DB, error) {
 		Addr:                 fmt.Sprintf("%v:%v", c.DBHost, c.DBPort),
 		DBName:               c.DBName,
 		AllowNativePasswords: c.AllowNativePasswords,
+		ParseTime:            true,
 	}
 	db, err := sql.Open("mysql", cfg.FormatDSN())
 

@@ -1,15 +1,15 @@
 package routes
 
 import (
-	"go_jwt_auth/api/controllers/usercontroller"
+	"go_jwt_auth/api/datastructures/userdatastructure"
 	"net/http"
 )
 
 type userRoutesImpl struct {
-	userController usercontroller.UserController
+	userController userdatastructure.IUserController
 }
 
-func NewUserRoutes(userController usercontroller.UserController) userRoutesImpl {
+func NewUserRoutes(userController userdatastructure.IUserController) userRoutesImpl {
 	return userRoutesImpl{userController}
 }
 
@@ -24,6 +24,21 @@ func (r *userRoutesImpl) Routes() []Route {
 			Uri:     "/users",
 			Method:  http.MethodPost,
 			Handler: r.userController.CreateUser,
+		},
+		{
+			Uri:     "/users/by-email",
+			Method:  http.MethodGet,
+			Handler: r.userController.GetUserByEmail,
+		},
+		{
+			Uri:     "/users/{id}/deactivate",
+			Method:  http.MethodPost,
+			Handler: r.userController.DeactivateUser,
+		},
+		{
+			Uri:     "/users/{id}/activate",
+			Method:  http.MethodPost,
+			Handler: r.userController.ActivateUser,
 		},
 		{
 			Uri:     "/users/{id}",

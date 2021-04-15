@@ -6,6 +6,7 @@ import (
 
 type IFileStorage interface {
 	UploadImage(filename string, contents io.Reader) (string, error)
+	UploadVideo(filename string, contents io.Reader) (string, error)
 }
 
 type fileStorageService struct {
